@@ -8,6 +8,9 @@ Apple Silicon 맥에서 CrossOver로 넥슨 플러그와 아주르 프로밀리�
 > 넥슨은 macOS나 Wine 환경을 지원하지 않아요. 따라 하다가 생기는 계정 제재 등의 문제는 본인 책임이에요.
 > 이 저장소에는 넥슨 파일이 들어 있지 않아요. 스크립트가 실행될 때 넥슨 공식 서버(`platform.nexon.com`)에서 받아요.
 
+> **CrossOver가 없다면:** 무료 Wine과 DXMT로 돌리는 실험용 런처도 있어요. 앱 하나로 준비부터 실행까지 해요 → [azur-promilia-launcher](https://github.com/SELCORE/azur-promilia-launcher)
+> 아직 실험 단계라 CrossOver 방법보다 확인된 부분이 적어요.
+
 ## 지금 상태 (2026-11-26 기준)
 
 | 단계 | 결과 |
