@@ -1,0 +1,8 @@
+.DS_Store
+*.log
+*.exe
+*.dll
+*.sys
+*.zip
+*.z00
+*.app/
