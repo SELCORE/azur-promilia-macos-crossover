@@ -40,7 +40,7 @@ fi
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-say "1/4 넥슨 플러그 설치"
+say "1/6 넥슨 플러그 설치"
 if [ -n "${PLUG_ZIP:-}" ]; then
   cp "$PLUG_ZIP" "$TMP/nexonplug.zip"
 else
@@ -56,7 +56,7 @@ reg_add "$UNINSTALL" /v DisplayName /t REG_SZ /d 'NexonPlug'
 reg_add "$UNINSTALL" /v InstallLocation /t REG_SZ /d 'C:\Nexon\NexonPlug'
 reg_add "$UNINSTALL" /v Publisher /t REG_SZ /d 'NEXON Korea Corp.'
 
-say "2/4 NGM(넥슨 게임 매니저) 설치"
+say "2/6 NGM(넥슨 게임 매니저) 설치"
 # NGM이 없으면 게임 설치/실행 버튼에서 "게임 실행에 실패했습니다"가 떠요.
 NGM_DIR="$DRIVE_C/ProgramData/Nexon/NGM"
 mkdir -p "$NGM_DIR"
@@ -73,14 +73,42 @@ for e in NGM.exe NGM64.exe; do
   reg_add 'HKLM\Software\Wow6432Node\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_BROWSER_EMULATION' /v "$e" /t REG_DWORD /d 11001
 done
 
-say "3/4 NGM 검은 화면 방지 (WebView2 소프트웨어 렌더링)"
+say "3/6 NGM 검은 화면 방지 (WebView2 소프트웨어 렌더링)"
 for root in HKCU HKLM; do
   for e in NGM.exe NGM64.exe; do
     reg_add "$root\\Software\\Policies\\Microsoft\\Edge\\WebView2\\AdditionalBrowserArguments" /v "$e" /t REG_SZ /d "$GL_FLAGS"
   done
 done
 
-say "4/4 보틀 창이 다른 앱 위에 떠 있지 않게 설정"
+say "4/6 보틀 창이 다른 앱 위에 떠 있지 않게 설정"
 reg_add 'HKCU\Software\Wine\Mac Driver' /v WindowsFloatWhenInactive /t REG_SZ /d none
+
+say "5/6 게임 안 한글 글꼴"
+# 게임 일부 화면이 윈도우 글꼴(맑은 고딕, MiSans, Noto Sans S Chinese)을 이름으로 찾는데 보틀에는 없어서
+# 한글이 빠져 보여요. 맥에 있는 한글 글꼴(AppleGothic)을 그 이름으로 복사해 넣어요 (이 맥에서만 쓰는 복사본).
+KO_FONT_SRC="/System/Library/Fonts/Supplemental/AppleGothic.ttf"
+FONT_DIR="$DRIVE_C/windows/Fonts"
+FONT_KEY='HKLM\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
+if [ -f "$KO_FONT_SRC" ]; then
+  mkdir -p "$FONT_DIR"
+  for entry in "Malgun Gothic|malgun.ttf" "MiSans|MiSans-Regular.ttf" "Noto Sans S Chinese|NotoSansSC-Regular.ttf"; do
+    fam="${entry%%|*}"; file="${entry#*|}"
+    python3 -I "$SCRIPT_DIR/rename_font.py" "$KO_FONT_SRC" "$FONT_DIR/$file" "$fam" >/dev/null || die "글꼴을 만들지 못했어요: $fam"
+    reg_add "$FONT_KEY" /v "$fam (TrueType)" /t REG_SZ /d "$file"
+  done
+  if [ -f "/System/Library/Fonts/Supplemental/Arial Unicode.ttf" ]; then
+    cp "/System/Library/Fonts/Supplemental/Arial Unicode.ttf" "$FONT_DIR/ARIALUNI.TTF"
+    reg_add "$FONT_KEY" /v "Arial Unicode MS (TrueType)" /t REG_SZ /d ARIALUNI.TTF
+  fi
+else
+  warn "맥 한글 글꼴을 찾지 못해서 건너뛰어요: $KO_FONT_SRC"
+fi
+
+say "6/6 Nexon Launcher 서비스 끄기"
+# NGM이 게임을 켤 때 이 서비스를 시작하려고 기다리는데 Wine에서는 끝내 켜지지 않아요.
+# 그동안 넥슨 플러그가 "게임 실행에 실패했습니다"를 띄워요. 꺼 두면 NGM이 바로 게임을 켜요.
+# (게임을 처음 켤 때 NGM이 서비스를 다시 등록하므로, 실행 앱도 켤 때마다 이 설정을 다시 해요.)
+SVC='HKLM\System\CurrentControlSet\Services\Nexon Launcher'
+if bwine reg query "$SVC" >/dev/null 2>&1; then reg_add "$SVC" /v Start /t REG_DWORD /d 4; fi
 
 say "완료했어요. 이제 ./scripts/make-launcher-app.sh 로 넥슨 플러그 실행 앱을 만들어 주세요."
